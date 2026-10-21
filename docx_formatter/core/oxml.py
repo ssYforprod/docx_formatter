@@ -99,3 +99,52 @@ def paragraph_has_page_field(paragraph: Paragraph) -> bool:
         if instr is not None and instr.text and "PAGE" in instr.text.upper():
             return True
     return False
+
+
+def add_toc_field(paragraph: Paragraph, levels: str) -> None:
+    """Вставить поле TOC (оглавление) с заглушкой вместо записей.
+
+    python-docx не умеет сам посчитать номера страниц (нет движка
+    вёрстки) — реальные записи оглавления соберёт Word при обновлении
+    полей (см. set_update_fields_on_open — вместе они дают
+    автообновление при открытии документа).
+    """
+    paragraph.add_run()._element.append(_fld_char("begin"))
+
+    instr_run = paragraph.add_run()
+    instr = OxmlElement("w:instrText")
+    instr.set(qn("xml:space"), "preserve")
+    instr.text = f'TOC \\o "{levels}" \\h \\z \\u'
+    instr_run._element.append(instr)
+
+    paragraph.add_run()._element.append(_fld_char("separate"))
+    paragraph.add_run("Для сборки оглавления обновите поля (Ctrl+A, затем F9).")
+    paragraph.add_run()._element.append(_fld_char("end"))
+
+
+def paragraph_has_toc_field(paragraph: Paragraph) -> bool:
+    """Абзац уже содержит поле оглавления (своё или авторское)."""
+    for run in paragraph.runs:
+        instr = run._element.find(qn("w:instrText"))
+        if instr is not None and instr.text and "TOC" in instr.text.upper():
+            return True
+    return False
+
+
+def has_update_fields_on_open(document: Document) -> bool:
+    node = document.settings.element.find(qn("w:updateFields"))
+    return node is not None and node.get(qn("w:val")) in ("true", "1", "on", None)
+
+
+def set_update_fields_on_open(document: Document) -> None:
+    """Включить автообновление полей при открытии документа в Word.
+
+    Без этого вставленное поле TOC покажет только заглушку, пока
+    пользователь не обновит поля вручную (Ctrl+A, F9).
+    """
+    settings = document.settings.element
+    node = settings.find(qn("w:updateFields"))
+    if node is None:
+        node = OxmlElement("w:updateFields")
+        settings.append(node)
+    node.set(qn("w:val"), "true")
