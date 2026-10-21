@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Iterator, Protocol, Union
 
 from docx.document import Document
+from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 from docx.table import Table
 from docx.text.paragraph import Paragraph
@@ -62,3 +63,39 @@ def iter_block_items(document: Document) -> Iterator[BlockItem]:
             yield Paragraph(child, document)
         elif child.tag == qn("w:tbl"):
             yield Table(child, document)
+
+
+def _fld_char(kind: str):
+    element = OxmlElement("w:fldChar")
+    element.set(qn("w:fldCharType"), kind)
+    return element
+
+
+def add_page_number_field(paragraph: Paragraph) -> None:
+    """Вставить поле PAGE (номер текущей страницы) в абзац.
+
+    python-docx не имеет для этого API. Полная тройка begin/separate/end
+    (а не короткая запись w:fldSimple) — разведка (scratchpad) и план
+    показали, что с w:fldSimple капризничает LibreOffice. "1" —
+    заглушка; Word показывает верное число сам при открытии/печати.
+    """
+    paragraph.add_run()._element.append(_fld_char("begin"))
+
+    instr_run = paragraph.add_run()
+    instr = OxmlElement("w:instrText")
+    instr.set(qn("xml:space"), "preserve")
+    instr.text = " PAGE "
+    instr_run._element.append(instr)
+
+    paragraph.add_run()._element.append(_fld_char("separate"))
+    paragraph.add_run("1")
+    paragraph.add_run()._element.append(_fld_char("end"))
+
+
+def paragraph_has_page_field(paragraph: Paragraph) -> bool:
+    """Абзац уже содержит поле номера страницы (своё или авторское)."""
+    for run in paragraph.runs:
+        instr = run._element.find(qn("w:instrText"))
+        if instr is not None and instr.text and "PAGE" in instr.text.upper():
+            return True
+    return False
