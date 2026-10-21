@@ -65,11 +65,11 @@ class BodyTextRule:
     """Шрифт/интерлиньяж/отступ/выравнивание для обычного текста.
 
     Применяется ко всем абзацам тела документа, КРОМЕ опознанных как
-    заголовки или подписи к рисункам/таблицам (context.heading_matches /
-    context.caption_matches, посчитаны один раз в pipeline — см.
-    DocContext) — у тех своё оформление, его накладывают правила
-    headings/captions. Абзацы внутри таблиц тоже не трогаем — у них свой
-    шрифт, см. правило tables.
+    заголовки, подписи к рисункам/таблицам или абзаца с полем оглавления
+    (context.heading_matches / context.caption_matches /
+    context.toc_paragraph_index, посчитаны один раз в pipeline — см.
+    DocContext) — у тех своё оформление или оно не нужно вовсе. Абзацы
+    внутри таблиц тоже не трогаем — у них свой шрифт, см. правило tables.
     """
 
     id = "body_text"
@@ -95,6 +95,8 @@ class BodyTextRule:
             if match is not None and match.confidence >= threshold:
                 continue
             if index in context.caption_matches:
+                continue
+            if index == context.toc_paragraph_index:
                 continue
             if _paragraph_matches_body(item, body):
                 continue

@@ -9,7 +9,14 @@ from docx.text.paragraph import Paragraph
 
 from factories import make_docx
 
-from docx_formatter.core.oxml import add_page_number_field, iter_block_items, paragraph_has_page_field, set_run_font
+from docx_formatter.core.oxml import (
+    add_page_number_field,
+    add_toc_field,
+    iter_block_items,
+    paragraph_has_page_field,
+    paragraph_has_toc_field,
+    set_run_font,
+)
 
 
 def _rfonts_element(run):
@@ -83,6 +90,29 @@ def test_paragraph_without_field_is_not_detected() -> None:
     paragraph = document.add_paragraph("обычный текст")
 
     assert paragraph_has_page_field(paragraph) is False
+
+
+def test_add_toc_field_inserts_begin_separate_end_with_toc_instruction() -> None:
+    document = Document()
+    paragraph = document.add_paragraph()
+
+    add_toc_field(paragraph, "1-3")
+
+    assert paragraph_has_toc_field(paragraph) is True
+    assert paragraph_has_page_field(paragraph) is False
+    instr_texts = [
+        run._element.find(qn("w:instrText")).text
+        for run in paragraph.runs
+        if run._element.find(qn("w:instrText")) is not None
+    ]
+    assert instr_texts and "TOC" in instr_texts[0] and '"1-3"' in instr_texts[0]
+
+
+def test_paragraph_without_toc_field_is_not_detected() -> None:
+    document = Document()
+    paragraph = document.add_paragraph("обычный текст")
+
+    assert paragraph_has_toc_field(paragraph) is False
 
 
 def test_iter_block_items_skips_section_properties(tmp_path: Path) -> None:
