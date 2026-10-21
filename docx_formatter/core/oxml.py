@@ -1,12 +1,11 @@
 from __future__ import annotations
 
-from typing import Iterator, Union
+from typing import Iterator, Protocol, Union
 
 from docx.document import Document
 from docx.oxml.ns import qn
 from docx.table import Table
 from docx.text.paragraph import Paragraph
-from docx.text.run import Run
 
 # Прямые атрибуты шрифта на каждый скрипт и их theme-варианты.
 # Написание "w:cstheme" (не "w:csTheme") — так атрибут назван в самой
@@ -15,8 +14,20 @@ _FONT_ATTRS = ("w:ascii", "w:hAnsi", "w:cs", "w:eastAsia")
 _THEME_ATTRS = ("w:asciiTheme", "w:hAnsiTheme", "w:cstheme", "w:eastAsiaTheme")
 
 
-def set_run_font(run: Run, font_name: str) -> None:
-    """Установить шрифт run'а для всех скриптов (ascii/hAnsi/cs/eastAsia).
+class _HasElement(Protocol):
+    """И Run, и стиль абзаца несут один и тот же .element (CT_R / CT_Style)
+    с методом get_or_add_rPr() — разведкой подтверждено, что это один и тот
+    же путь для обоих типов объектов."""
+
+    @property
+    def element(self): ...
+
+
+def set_run_font(run_or_style: _HasElement, font_name: str) -> None:
+    """Установить шрифт для всех скриптов (ascii/hAnsi/cs/eastAsia).
+
+    Принимает Run или Style (например, document.styles["Normal"]) — у
+    обоих get_or_add_rPr()/get_or_add_rFonts() работают одинаково.
 
     `run.font.name` пишет только ascii/hAnsi — подтверждено разведкой
     (scratchpad/explore_oxml.py): кириллица и complex-script текст не
@@ -26,7 +37,7 @@ def set_run_font(run: Run, font_name: str) -> None:
     Также убираем *Theme-атрибуты: при их наличии Word может предпочесть
     тему вместо явно заданного имени шрифта.
     """
-    rPr = run._element.get_or_add_rPr()
+    rPr = run_or_style.element.get_or_add_rPr()
     rFonts = rPr.get_or_add_rFonts()
     for attr in _FONT_ATTRS:
         rFonts.set(qn(attr), font_name)
