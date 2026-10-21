@@ -1,5 +1,10 @@
+import sys
+
+from docx_formatter.cli import run
+
+
 def main() -> None:
-    print("DOCX Formatter")
+    run(sys.argv[1:])
 
 
 if __name__ == "__main__":
