@@ -1,7 +1,6 @@
 from __future__ import annotations
 
-from docx.document import Document
-
+from docx_formatter.core.context import DocContext
 from docx_formatter.core.profile import Profile
 from docx_formatter.core.report import Change
 from docx_formatter.core.units import lengths_equal, mm
@@ -23,11 +22,11 @@ class PageSetupRule:
     def enabled_for(self, profile: Profile) -> bool:
         return True
 
-    def apply(self, document: Document, profile: Profile) -> list[Change]:
+    def apply(self, context: DocContext) -> list[Change]:
         changes: list[Change] = []
-        margins = profile.page.margins_mm
+        margins = context.profile.page.margins_mm
 
-        for index, section in enumerate(document.sections):
+        for index, section in enumerate(context.document.sections):
             changed = False
             for section_attr, margin_attr in _MARGIN_ATTRS:
                 desired = mm(getattr(margins, margin_attr))
