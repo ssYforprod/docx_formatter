@@ -9,7 +9,7 @@ from docx.text.paragraph import Paragraph
 
 from factories import make_docx
 
-from docx_formatter.core.oxml import iter_block_items, set_run_font
+from docx_formatter.core.oxml import add_page_number_field, iter_block_items, paragraph_has_page_field, set_run_font
 
 
 def _rfonts_element(run):
@@ -61,6 +61,28 @@ def test_iter_block_items_preserves_document_order(tmp_path: Path) -> None:
     assert len(items[1].rows) == 2
     assert len(items[1].columns) == 3
     assert items[2].text == "после таблицы"
+
+
+def test_add_page_number_field_inserts_begin_separate_end() -> None:
+    document = Document()
+    paragraph = document.add_paragraph()
+
+    add_page_number_field(paragraph)
+
+    assert paragraph_has_page_field(paragraph) is True
+    fld_types = []
+    for run in paragraph.runs:
+        fldChar = run._element.find(qn("w:fldChar"))
+        if fldChar is not None:
+            fld_types.append(fldChar.get(qn("w:fldCharType")))
+    assert fld_types == ["begin", "separate", "end"]
+
+
+def test_paragraph_without_field_is_not_detected() -> None:
+    document = Document()
+    paragraph = document.add_paragraph("обычный текст")
+
+    assert paragraph_has_page_field(paragraph) is False
 
 
 def test_iter_block_items_skips_section_properties(tmp_path: Path) -> None:

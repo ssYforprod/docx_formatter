@@ -15,6 +15,7 @@ from docx_formatter.core.rules.base import Rule
 from docx_formatter.core.rules.body_text import BodyTextRule
 from docx_formatter.core.rules.figures import CaptionsRule
 from docx_formatter.core.rules.headings import HeadingsRule
+from docx_formatter.core.rules.page_numbers import PageNumbersRule
 from docx_formatter.core.rules.page_setup import PageSetupRule
 from docx_formatter.core.rules.tables import TablesRule
 
@@ -22,13 +23,15 @@ from docx_formatter.core.rules.tables import TablesRule
 # переопределяет часть абзацев, уже приведённых к профилю body_text
 # (body_text их не трогает благодаря заранее посчитанному
 # context.heading_matches, см. DocContext); captions правит текст подписи
-# уже после того, как body_text/tables задали её шрифт.
+# уже после того, как body_text/tables задали её шрифт. page_numbers
+# работает с футерами секций — не зависит от остальных правил.
 RULES: tuple[Rule, ...] = (
     PageSetupRule(),
     BodyTextRule(),
     HeadingsRule(),
     TablesRule(),
     CaptionsRule(),
+    PageNumbersRule(),
 )
 
 
