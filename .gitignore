@@ -8,3 +8,9 @@ __pycache__/
 dist/
 build/
 *.spec
+
+# Claude
+.claude/
+CLAUDE.md
+CLAUDE.local.md
+.mcp.json
