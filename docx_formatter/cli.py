@@ -43,8 +43,9 @@ def run(argv: list[str]) -> None:
         print(f"Предупреждение профиля: {warning}", file=sys.stderr)
 
     out_path, report = Formatter(profile).run(args.file, output_path=args.out)
+    applied = [change for change in report.changes if change.level == "info"]
 
     print(f"Готово: {out_path}")
-    print(f"Изменений: {len(report.changes)}")
+    print(f"Изменений: {len(applied)}")
     for warning in report.warnings:
         print(f"Внимание: {warning.scope}: {warning.what}")
