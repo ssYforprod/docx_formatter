@@ -6,18 +6,27 @@ from pathlib import Path
 
 from docx_formatter.core.pipeline import Formatter
 from docx_formatter.core.profile import ProfileError, load_profile
+from docx_formatter.io.profile_repo import list_profiles
 
-_PROFILES_DIR = Path(__file__).resolve().parent.parent / "profiles"
 
+def _resolve_profile_path(
+    value: str, *, bundled_dir: Path | None = None, user_dir: Path | None = None
+) -> Path:
+    """Путь к JSON-профилю: либо сам value — путь к файлу, либо его id.
 
-def _resolve_profile_path(value: str) -> Path:
+    Резолвит id через тот же profile_repo, что и GUI (встроенные +
+    %APPDATA%, пользовательский перекрывает встроенный) — раньше у CLI
+    был свой, не связанный с profile_repo способ найти профиль по id,
+    и правка через %APPDATA% (путь, который показывает GUI) оставалась
+    для CLI невидимой.
+    """
     path = Path(value)
     if path.is_file():
         return path
-    candidate = _PROFILES_DIR / f"{value}.json"
-    if candidate.is_file():
-        return candidate
-    raise SystemExit(f"Профиль не найден: {value!r} (ни как файл, ни как {candidate})")
+    for entry in list_profiles(bundled_dir=bundled_dir, user_dir=user_dir):
+        if entry.id == value:
+            return entry.path
+    raise SystemExit(f"Профиль не найден: {value!r} (ни как файл, ни как id известного профиля)")
 
 
 def run(argv: list[str]) -> None:
